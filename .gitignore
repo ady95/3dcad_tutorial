@@ -218,3 +218,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# FreeCAD / CAE 산출물
+*.FCBak
+*.FCStd1
+*.frd
+*.dat
+*.sta
+*.cvg
+*.12d
+outputs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.obsidian/
