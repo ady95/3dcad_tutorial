@@ -1,0 +1,12 @@
+[
+ {"id": "E1-poc", "group": "기준", "expect": "complete", "request": "@poc_bracket/request.txt", "answers": "@poc_bracket/answers.json"},
+ {"id": "E2-dims", "group": "치수 변형", "expect": "complete", "request": "알루미늄 6061-T6 L자 브래킷을 설계해줘. 바닥판 100×60mm, 세로판은 바닥판 한쪽 끝면 바깥쪽에 붙고 높이(바닥판 아랫면 기준) 70mm. Ø6 구멍 4개: 세로판 안쪽 면에서 22mm, 반대쪽 끝에서 10mm, 긴 가장자리에서 10mm. 볼트 구멍 4개 내면 고정, 세로판 윗면 전체에 바닥판 반대쪽으로 200N. 안전율 2.0 이상, 최대 처짐 0.5mm 이하에서 가장 가볍게. 초기안 바닥판·세로판 8mm, 안쪽 필렛 R5. 두께 범위 3~10mm, 필렛 2~8mm, 판재 3·4·5·6·8·10mm, 바깥 모서리 필렛 R5.", "answers": ["요청에 적은 값 그대로입니다. 진행하세요."]},
+ {"id": "E3-load", "group": "하중 변형", "expect": "complete", "request": "@poc_full", "replace": {"200N": "300N"}, "answers": ["요청에 적은 값 그대로입니다. 진행하세요."]},
+ {"id": "E4-fixture", "group": "구속 변형", "expect": "complete", "request": "@poc_full", "replace": {"볼트 구멍 4개 내면 고정": "바닥면 전체 고정(벽에 완전히 밀착)"}, "answers": ["요청에 적은 값 그대로입니다. 진행하세요."]},
+ {"id": "E5-criteria", "group": "기준 변형", "expect": "complete", "request": "@poc_full", "replace": {"안전율 2.0 이상, 최대 처짐 0.5mm 이하": "안전율 3.0 이상, 최대 처짐 0.3mm 이하"}, "answers": ["요청에 적은 값 그대로입니다. 진행하세요."]},
+ {"id": "E6-missing", "group": "조건 누락", "expect": "ask_then_complete", "request": "알루미늄 6061-T6 L자 브래킷 120×80mm, 세로판 높이 80mm, 200N 하중을 견디면서 최대한 가볍게 만들어줘. 초기안은 두께 8mm, 필렛 R5.", "answers": ["@poc_bracket/answers.json#0", "구멍 지름은 6mm입니다. 판정 기준은 안전율 2.0 이상, 최대 처짐 0.5mm 이하입니다.", "앞의 답변대로 확정합니다. 진행하세요."]},
+ {"id": "E6b-unanswered", "group": "조건 누락", "expect": "ask_then_stop", "request": "알루미늄 6061-T6 L자 브래킷 120×80mm, 세로판 높이 80mm, 200N 하중을 견디면서 최대한 가볍게 만들어줘. 초기안은 두께 8mm, 필렛 R5.", "answers": ["@poc_bracket/answers.json#0", "앞의 답변대로 확정합니다. 진행하세요."]},
+ {"id": "E7-material", "group": "범위 밖", "expect": "refuse", "request": "@poc_full", "replace": {"알루미늄 6061-T6": "일반 구조용 강재 SS275"}, "answers": ["재료는 SS275로 꼭 해야 합니다."]},
+ {"id": "E8-parttype", "group": "범위 밖", "expect": "refuse", "request": "외경 100mm, 두께 10mm인 원형 파이프 플랜지를 설계해줘. 볼트 구멍 Ø11 4개(PCD 75mm), 중앙 관통 구멍 Ø48. 재료 알루미늄 6061-T6, 플랜지면에 수직으로 1kN 인장 하중, 안전율 2.0 이상.", "answers": ["플랜지로 꼭 해야 합니다."]},
+ {"id": "E9-infeasible", "group": "불가능 기준", "expect": "report_infeasible", "request": "@poc_full", "replace": {"최대 처짐 0.5mm 이하": "최대 처짐 0.05mm 이하"}, "answers": ["범위와 판재 규격은 바꿀 수 없습니다. 결과를 그대로 보고하세요."]}
+]
