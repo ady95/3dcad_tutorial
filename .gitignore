@@ -233,3 +233,6 @@ outputs/
 .DS_Store
 Thumbs.db
 .obsidian/
+
+# 실습 산출물
+output/
