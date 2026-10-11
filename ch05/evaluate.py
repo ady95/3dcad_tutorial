@@ -9,6 +9,7 @@ evaluate({"base_t": 6, "arm_t": 8, "r_in": 8})처럼 부르면 freecadcmd로 04-
 """
 import hashlib
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -21,7 +22,7 @@ load_dotenv(ROOT / ".env")                  # FREECAD_CMD (01-2)
 from common.freecad_runner import run_freecad, tagged_line  # noqa: E402
 
 OUT = ROOT / "output" / "ch05"
-CACHE = OUT / "cache"
+CACHE = Path(os.environ.get("CAE_CACHE_DIR", OUT / "cache"))     # 06-3 평가는 사례마다 따로
 HISTORY = OUT / "history.jsonl"
 BRACKET_FEM = ROOT / "ch04" / "bracket_fem.py"
 TEMPLATE_DIR = OUT / "template"            # 05장 전용 기준 모델 — 다른 장의 출력 파일을 공유하지 않는다
@@ -34,17 +35,19 @@ def ensure_template():
         run_freecad(ROOT / "ch02" / "bracket_parametric.py", env={"OUT_DIR": str(TEMPLATE_DIR)})
 
 
-def evaluate(x, mesh=4.0, tag=""):
-    """설계 변수 dict → 결과 dict. 실패해도 예외 대신 ok=False로 돌려준다 (최적화가 멈추지 않게)."""
+def evaluate(x, mesh=4.0, tag="", load=None):
+    """설계 변수 dict → 결과 dict. 실패해도 예외 대신 ok=False로 돌려준다 (최적화가 멈추지 않게).
+    load: 해석 조건을 바꿀 때만 준다 (06장). 예: {"LOAD_N": "300", "FIX": "bottom"}"""
     x = {k: round(float(v), 2) for k, v in sorted(x.items())}       # 0.01 mm 단위로 맞춰 캐시
-    key = hashlib.md5(json.dumps([x, mesh]).encode()).hexdigest()[:10]
+    key = hashlib.md5(json.dumps([x, mesh] + ([load] if load else [])).encode()).hexdigest()[:10]
     run_dir = CACHE / key
     cached = run_dir / "result.json"
     if cached.exists():
         return {**json.loads(cached.read_text(encoding="utf-8")), "cached": True}
     run_dir.mkdir(parents=True, exist_ok=True)
     ensure_template()
-    env = {"SRC": str(SRC), "SET": ";".join(f"{k}={v}" for k, v in x.items()), "MESH": str(mesh), "OUT_DIR": str(run_dir)}
+    env = {"SRC": str(SRC), "SET": ";".join(f"{k}={v}" for k, v in x.items()), "MESH": str(mesh), "OUT_DIR": str(run_dir),
+           **(load or {})}
     t = time.time()
     rc, log = run_freecad(BRACKET_FEM, env=env, timeout=900)
     line = tagged_line(log, "RESULT")
