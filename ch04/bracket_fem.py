@@ -19,13 +19,19 @@ LOAD_N = float(os.environ.get("LOAD_N", "200"))
 OUT = os.path.abspath(os.environ.get("OUT_DIR", "output/ch04/bracket"))
 os.makedirs(OUT, exist_ok=True)
 
+def fail(stage, detail):
+    """실패 원인을 태그 줄로 남기고 끝낸다 — 바깥 Python(05장 최적화)이 읽는다"""
+    print("FAIL " + json.dumps({"stage": stage, "detail": detail}), flush=True)
+    raise SystemExit(1)
+
+
 doc = App.openDocument(os.path.abspath(os.environ.get("SRC", "output/ch02/bracket_param.FCStd")))
 if os.environ.get("SET"):
     set_params(doc, {k: float(v) for k, v in (kv.split("=") for kv in os.environ["SET"].split(";"))})
     rebind_fillets(doc)
 checks, geo = validate(doc)                      # 해석 전에 형상부터 검증 (02-4)
 if not all(checks.values()):
-    raise SystemExit(f"형상 검증 실패: {[k for k, ok in checks.items() if not ok]}")
+    fail("geometry", [k for k, ok in checks.items() if not ok])
 p = get_params(doc)
 
 # 해석용 형상: Body의 최종 형상을 Part::Feature로 복사해 면 번호를 고정한다
@@ -53,7 +59,7 @@ assert len(loaded) == 1, f"하중면이 1개가 아님: {loaded}"
 an, solver, mesh = build_analysis(doc, part, fixed, loaded, LOAD_N, App.Vector(-1, 0, 0), MESH)
 res = solve(doc, an, solver, mesh, OUT)
 if res is None:
-    raise SystemExit("해석 실패: 결과 없음 (메시 오류 가능)")
+    fail("solve", "결과 없음 (메시 오류 가능)")
 r = summarize(res, mesh, [s.getElement(n) for n in fixed], exclude_mm=3.0)
 
 sf = YIELD_MPA / r["vm_max_MPa"]
