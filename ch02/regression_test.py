@@ -25,8 +25,9 @@ script = Path(__file__).with_name("bracket_parametric.py")
 LABEL = {"no_error_objects": "오류 객체", "valid_single_solid": "형상 유효", "bbox": "외곽 치수",
          "holes": "구멍 위치", "volume": "부피"}
 print(f"{'변경':<24}{'값만 변경':<28}{'필렛 다시 연결'}")
-for name, change in CASES:
-    rc, log = run_freecad(script, env={"SET": change, "REBIND": "1", "OUT_DIR": str(ROOT / "output" / "ch02")})
+for i, (name, change) in enumerate(CASES):
+    out_dir = ROOT / "output" / "ch02" / "regression" / f"case{i}"      # 경우마다 따로 저장 — 공유 파일을 덮어쓰지 않게
+    rc, log = run_freecad(script, env={"SET": change, "REBIND": "1", "OUT_DIR": str(out_dir)})
     if not change:
         base = json.loads(tagged_line(log, "BASE"))
         print(f"{name:<24}{'합격' if base['pass'] else '불합격':<28}-")

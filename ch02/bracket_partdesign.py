@@ -51,7 +51,7 @@ doc.recompute()
 pocket = body.newObject("PartDesign::Pocket", "Holes")
 pocket.Profile = holes
 pocket.Type = "ThroughAll"
-pocket.Midplane = True              # 스케치 평면(z=0) 양쪽으로 관통
+pocket.SideType = "Symmetric"       # 스케치 평면(z=0) 양쪽으로 관통 (1.1에서 Midplane 대체)
 doc.recompute()
 
 
