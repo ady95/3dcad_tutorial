@@ -7,7 +7,8 @@
 | `check_server.py` | Python 3.12 | LLM 없이 MCP 서버 점검 (도구 목록, 순서 위반 호출) | 06-1 |
 | `agent.py` | Python 3.12 | GPT-6 Astra + MCP 도구 + ask_user로 요구사항 → 보고서 | 06-1, 06-2 |
 | `eval_cases.json` | — | 평가셋 9건 (기준·변형·조건 누락·범위 밖·불가능 기준) | 06-3 |
-| `eval_agent.py` | Python 3.12 | 평가 실행과 기대 행동 판정 (state.json·산출물 기준) | 06-3 |
+| `eval_agent.py` | Python 3.12 | 평가 실행과 기대 행동 판정 (state.json·산출물 기준, `EVAL_OUT`으로 결과 폴더 지정) | 06-3, 06-4 |
+| `compare_llm.py` | Python 3.12 | 책의 예제 5종을 모델별로 반복 실행해 비교 (`--tag`, `--report`) | 06-4 |
 
 전체 실행은 `poc_bracket/run_poc.py` (06-2).
 
@@ -22,6 +23,21 @@ python ch06/eval_agent.py E7-material E8-parttype
 
 `mcp` 2.x에서는 `FastMCP`가 `MCPServer`(`mcp.server.mcpserver`)로 바뀌었습니다. stdio MCP 서버에서는 표준 출력에 print하면 안 됩니다(`quiet()` 참고).
 
+## 06-4 로컬 LLM으로 바꿔 보기 (선택, GPU 필요)
+
+예제 코드는 그대로 두고 환경변수로 모델만 바꿉니다.
+
+```bash
+export OPENAI_BASE_URL=http://localhost:11434/v1   # Ollama (OpenAI 호환 API)
+export OPENAI_API_KEY=ollama
+export OPENAI_MODEL=qwen3.8:27b
+python ch06/compare_llm.py --tag qwen --runs 3
+python ch06/compare_llm.py --report astra qwen
+EVAL_OUT=output/ch06/eval_qwen python ch06/eval_agent.py
+```
+
 ## 기준 버전 (실측)
 
 Windows 11 · FreeCAD 1.1.4 (CalculiX 2.22, Gmsh 4.15.0) · Python 3.12.15 · SciPy 1.18.1 · mcp 2.2.0 · gpt-6-astra
+
+06-4: Ollama 0.33.2 · qwen3.8:27b (Q4_K_M) · RTX 3090 24 GB × 2 (Linux)

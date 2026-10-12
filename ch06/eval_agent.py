@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from ch06.agent import run  # noqa: E402
 
-OUT = Path(os.environ.get("EVAL_OUT", ROOT / "output" / "ch06" / "eval"))     # 부록 A: 모델별로 따로
+OUT = Path(os.environ.get("EVAL_OUT", ROOT / "output" / "ch06" / "eval"))     # 06-4: 모델별로 따로
 POC_FULL = ("알루미늄 6061-T6 L자 장착 브래킷을 설계해줘. 바닥판 120×80mm, 세로판은 바닥판 한쪽 끝면 바깥쪽에 붙고 "
             "높이(바닥판 아랫면 기준) 80mm. Ø6 구멍 4개: 세로판 안쪽 면에서 25mm, 반대쪽 끝에서 10mm, 긴 가장자리에서 10mm. "
             "볼트 구멍 4개 내면 고정, 세로판 윗면 전체에 바닥판 반대쪽으로 200N. 안전율 2.0 이상, 최대 처짐 0.5mm 이하에서 "

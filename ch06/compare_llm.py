@@ -1,13 +1,13 @@
-"""부록 A 로컬 LLM과 GPT-6 Astra 비교 — 책의 예제를 같은 조건으로 반복 실행해 표로 정리한다 (실행 위치 (3)).
+"""06-4 로컬 LLM으로 바꿔 보기 — 책의 예제를 모델만 바꿔 같은 조건으로 반복 실행하고 표로 정리한다 (실행 위치 (3)).
 
 모델은 환경변수로 바꾼다. 코드는 그대로다.
   GPT-6 Astra : OPENAI_API_KEY만 설정 (.env)
   로컬 LLM    : OPENAI_BASE_URL=http://localhost:11434/v1  OPENAI_API_KEY=ollama  OPENAI_MODEL=qwen3.8:27b
 
 사용 (저장소 루트에서):
-  python appendix_a/benchmark.py --tag astra --runs 3
-  python appendix_a/benchmark.py --tag qwen --runs 3
-  python appendix_a/benchmark.py --report astra qwen          # 두 결과를 비교표로
+  python ch06/compare_llm.py --tag astra --runs 3
+  python ch06/compare_llm.py --tag qwen --runs 3
+  python ch06/compare_llm.py --report astra qwen          # 두 결과를 비교표로
 """
 import argparse
 import json
@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "output" / "appendix_a"
+OUT = ROOT / "output" / "ch06" / "compare_llm"
 TASKS = {   # 이름: (책 위치, 명령 인자)
     "plate": ("01-3 플레이트 코드 생성", ["ch01/make_plate.py"]),
     "bracket": ("02-4 생성→검증→수정 (좌표 명시)", ["ch02/generate_bracket.py"]),
