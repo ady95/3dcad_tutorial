@@ -206,42 +206,50 @@ class Project:
 
     # ------------------------------------------------------------------ 3. 산출물
     def export_final(self, base_t, arm_t, r_in):
-        """최종 설계의 FCStd·STEP·STL + 요소 3 mm 상세 해석(VTK)·응력 그림을 프로젝트 폴더에 만든다."""
+        """최종 설계의 요소 3 mm 상세 해석이 합격일 때만 FCStd·STEP·STL·해석 결과·응력 그림을 프로젝트 폴더에 만든다.
+        기준을 만족하지 못한 설계는 최종 산출물을 만들지 않는다 (06-3 검수: 불합격 설계의 CAD 파일이 배포되지 않게)."""
         if not self.state["spec"]:
             return fail("order", "사양이 없습니다", "먼저 set_spec")
         x = {"base_t": base_t, "arm_t": arm_t, "r_in": r_in}
         params = {**self.fixed(), **x}
-        cad = self.dir / "cad"
+        work = self.dir / "work"                         # 판정 전 작업 폴더 — 합격해야 산출물로 옮긴다
         rc, log = run_freecad(ROOT / "ch02" / "bracket_parametric.py",
-                              env={"SET": ";".join(f"{k}={v}" for k, v in params.items()), "REBIND": "1", "OUT_DIR": str(cad)})
+                              env={"SET": ";".join(f"{k}={v}" for k, v in params.items()), "REBIND": "1", "OUT_DIR": str(work)})
         geo = json.loads(tagged_line(log, "REBOUND") or "{}")
         if not geo.get("pass"):
             return fail("geometry", geo.get("failed", log[-200:]), "필렛·구멍 간섭 여부 확인")
-        fcstd = self.dir / "bracket.FCStd"
-        shutil.copy(cad / "bracket_param.FCStd", fcstd)
-        (cad / "export_result.json").unlink(missing_ok=True)
-        run_freecad(ROOT / "ch03" / "export_formats.py", env={"SRC": str(fcstd), "OUT_DIR": str(cad)})
-        # STL 저장 중 진행 표시가 줄바꿈 없이 EXPORT 줄 앞에 붙는다 → 태그 줄 대신 결과 파일을 읽는다
-        exp = json.loads((cad / "export_result.json").read_text(encoding="utf-8"))
-        shutil.copy(cad / "bracket.step", self.dir / "bracket.step")
-        shutil.copy(cad / "bracket_default.stl", self.dir / "bracket.stl")
-        fem = self.dir / "fem"
+        src = work / "bracket_param.FCStd"
         rc, log = run_freecad(ROOT / "ch04" / "bracket_fem.py",
-                              env={"SRC": str(fcstd), "MESH": "3", "VTK": "1", "OUT_DIR": str(fem), **self.load()})
+                              env={"SRC": str(src), "MESH": "3", "VTK": "1", "OUT_DIR": str(work / "fem"), **self.load()})
         line = tagged_line(log, "RESULT")
         if not line:
             return fail("solve", tagged_line(log, "FAIL") or log[-200:], "요소 크기를 바꿔 재시도")
         r = json.loads(line)
+        mesh3 = {"mass_g": r["mass_g"], "vm_max_MPa": r["vm_max_MPa"], "vm_max_at": r["vm_max_at"],
+                 "safety_factor": r["safety_factor"], "u_max_mm": r["u_max_mm"], "nodes": r["nodes"], "pass": self.judge(r)}
+        if not mesh3["pass"]:
+            shutil.rmtree(work, ignore_errors=True)      # 판정 수치는 state.json에 남기고, 불합격 설계의 파일은 남기지 않는다
+            out = fail("policy", {"design": x, "mesh3": mesh3},
+                       "기준을 만족하지 못한 설계는 최종 산출물·보고서를 만들지 않습니다. 결과를 최종 응답으로 사용자에게 보고하세요")
+            self.save("export_final", {"result": out})
+            return out
+        fcstd = self.dir / "bracket.FCStd"
+        shutil.copy(src, fcstd)
+        (work / "export_result.json").unlink(missing_ok=True)
+        run_freecad(ROOT / "ch03" / "export_formats.py", env={"SRC": str(fcstd), "OUT_DIR": str(work)})
+        # STL 저장 중 진행 표시가 줄바꿈 없이 EXPORT 줄 앞에 붙는다 → 태그 줄 대신 결과 파일을 읽는다
+        exp = json.loads((work / "export_result.json").read_text(encoding="utf-8"))
+        shutil.copy(work / "bracket.step", self.dir / "bracket.step")
+        shutil.copy(work / "bracket_default.stl", self.dir / "bracket.stl")
+        shutil.copytree(work / "fem", self.dir / "fem", dirs_exist_ok=True)
+        shutil.rmtree(work, ignore_errors=True)          # 산출물 폴더에는 최종 파일만 남긴다
         import pyvista as pv                             # PyVista는 그림이 필요할 때만 불러온다
         from ch04.report import render_contour
-        render_contour(str(fem / "result.vtk"), str(self.dir / "contour.png"))
+        render_contour(str(self.dir / "fem" / "result.vtk"), str(self.dir / "contour.png"))
         pv.close_all()      # MCP 서버는 도구를 작업 스레드에서 실행한다 — 창을 같은 스레드에서 닫아야 종료 때 OpenGL 오류가 없다
         out = {"ok": True, "design": x, "files": ["bracket.FCStd", "bracket.step", "bracket.stl", "fem/result.json",
                                                   "fem/result.vtk", "contour.png"],
-               "step_volume_diff": exp.get("step", {}).get("volume_diff"),
-               "mesh3": {"mass_g": r["mass_g"], "vm_max_MPa": r["vm_max_MPa"], "vm_max_at": r["vm_max_at"],
-                         "safety_factor": r["safety_factor"], "u_max_mm": r["u_max_mm"], "nodes": r["nodes"],
-                         "pass": self.judge(r)}}
+               "step_volume_diff": exp.get("step", {}).get("volume_diff"), "mesh3": mesh3}
         self.state["final"] = out
         self.save("export_final", {"result": out})
         return out
@@ -250,7 +258,8 @@ class Project:
         """보고서는 코드가 state.json으로 쓰고, AI는 요약 문단만 쓴다. 요약 속 숫자가 보고서에 없으면 거절한다."""
         st = self.state
         if not st.get("final"):
-            return fail("order", "최종 산출물이 없습니다", "먼저 export_final")
+            return fail("order", "최종 산출물이 없습니다",
+                        "합격한 최종 설계를 export_final로 만든 뒤에 부르세요. 기준을 만족하는 설계가 없으면 보고서 없이 최종 응답으로 보고하세요")
         body = self._report_body()
         nums = lambda s: {float(n) for n in re.findall(r"\d+(?:\.\d+)?", s)}     # 값으로 비교: "2"와 "2.0"은 같은 숫자
         unknown = sorted(nums(ai_summary) - nums(body))
@@ -299,7 +308,8 @@ class Project:
         L += ["", "## 3. 최종 설계 상세 (요소 3 mm)", "", f"- 절점 {f['mesh3']['nodes']}개, 최대 von Mises 응력 "
               f"{f['mesh3']['vm_max_MPa']} MPa (위치 {f['mesh3']['vm_max_at']}, 고정 경계)", "",
               "![von Mises 응력 분포](contour.png)", "",
-              "## 4. 산출물", ""] + [f"- {x}" for x in f["files"]] + ["- state.json (사양·모든 도구 호출 이력)", "",
+              "## 4. 산출물", ""] + [f"- {x}" for x in f["files"]] + ["- state.json (사양·모든 도구 호출 이력)",
+              f"- STEP 부피 차이(원본 대비): {f.get('step_volume_diff')} mm³", "",
               "## 5. 가정과 한계", "",
               "- 선형 정적 해석, 볼트 체결·접촉·예압 미반영, 정적 하중 하나만 고려(피로·충격·온도 제외).",
               "- 최대 응력은 고정 경계에 생겨 메시에 따라 달라집니다(04-5). 제조 공차와 재료 편차는 반영하지 않았습니다.",

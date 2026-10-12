@@ -20,6 +20,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.stdout.reconfigure(errors="replace")   # 콘솔이 못 쓰는 문자(−, — 등)는 ?로 — 한국어 Windows(cp949)에서 멈추지 않게
+from dotenv import load_dotenv  # noqa: E402
+
+load_dotenv(ROOT / ".env")     # 예제들과 같은 설정을 먼저 읽어, 실제로 쓸 모델을 여기서 확정한다
 OUT = ROOT / "output" / "ch06" / "compare_llm"
 TASKS = {   # 이름: (책 위치, 명령 인자)
     "plate": ("01-3 플레이트 코드 생성", ["ch01/make_plate.py"]),
@@ -56,7 +59,8 @@ def parse(task, out):
 
 
 def run(tag, runs, only):
-    model = os.environ.get("OPENAI_MODEL", "gpt-6-astra")
+    model = os.environ.get("OPENAI_MODEL", "gpt-6-astra")      # 확정한 모델을 예제 실행마다 명시해 넘긴다 (기록과 실제가 어긋나지 않게)
+    print(f"모델: {model}", flush=True)
     rows_file = OUT / tag / "results.json"
     rows = json.loads(rows_file.read_text(encoding="utf-8")) if rows_file.exists() else []
     for task, (title, args) in TASKS.items():
@@ -68,10 +72,13 @@ def run(tag, runs, only):
             extra = ["--out", str(folder)] if task != "review" else []
             t = time.time()
             p = subprocess.run([sys.executable, "-u", *args, *extra], cwd=ROOT, capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+                               encoding="utf-8", errors="replace", env={**os.environ, "OPENAI_MODEL": model, "PYTHONIOENCODING": "utf-8"})
             sec = round(time.time() - t, 1)
             (folder / "stdout.txt").write_text(p.stdout + "\n--- stderr ---\n" + p.stderr[-4000:], encoding="utf-8")
             row = {"task": task, "title": title, "run": i, "model": model, "sec": sec, "rc": p.returncode, **parse(task, p.stdout)}
+            shown = re.search(r"코드 생성: (\S+?),", p.stdout)        # 01-3 예제는 실제로 쓴 모델 이름을 출력한다
+            if shown and shown.group(1) != model:
+                row["model_mismatch"] = shown.group(1)
             rows = [r for r in rows if not (r["task"] == task and r["run"] == i)] + [row]
             rows_file.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
             print(json.dumps(row, ensure_ascii=False), flush=True)

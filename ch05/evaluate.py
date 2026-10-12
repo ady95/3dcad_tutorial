@@ -30,10 +30,11 @@ TEMPLATE_DIR = OUT / "template"            # 05장 전용 기준 모델 — 다�
 SRC = TEMPLATE_DIR / "bracket_param.FCStd"
 
 
-def ensure_template():
-    """02-3의 파라메트릭 브래킷을 기본값으로 한 번 만들어 둔다 (설계 변수는 매번 SET으로 덮어쓴다)"""
+def ensure_template(timeout=600):
+    """02-3의 파라메트릭 브래킷을 기본값으로 한 번 만들어 둔다 (설계 변수는 매번 SET으로 덮어쓴다). 만들어졌으면 True"""
     if not SRC.exists():
-        run_freecad(ROOT / "ch02" / "bracket_parametric.py", env={"OUT_DIR": str(TEMPLATE_DIR)})
+        run_freecad(ROOT / "ch02" / "bracket_parametric.py", env={"OUT_DIR": str(TEMPLATE_DIR)}, timeout=timeout)
+    return SRC.exists()
 
 
 def evaluate(x, mesh=4.0, tag="", load=None, timeout=900):
@@ -47,12 +48,15 @@ def evaluate(x, mesh=4.0, tag="", load=None, timeout=900):
     if cached.exists():
         return {**json.loads(cached.read_text(encoding="utf-8")), "cached": True}
     run_dir.mkdir(parents=True, exist_ok=True)
-    ensure_template()
     # 해석 조건을 모두 직접 지정한다 — 셸에 남은 FIX·LOAD_N 같은 환경변수가 섞이지 않게
     env = {"SRC": str(SRC), "SET": ";".join(f"{k}={v}" for k, v in x.items()), "MESH": str(mesh), "OUT_DIR": str(run_dir),
            "FIX": "holes", "LOAD_N": "200", "VTK": "0", **(load or {})}
     t = time.time()
-    try:
+    try:                                    # 기준 모델 생성(처음 한 번)과 해석 모두 같은 실패 경로로
+        if not ensure_template(timeout):
+            return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False,
+                            "error": {"stage": "template", "detail": "기준 모델을 만들지 못함 (ch02/bracket_parametric.py)"}},
+                           t, tag, None)
         rc, log = run_freecad(BRACKET_FEM, env=env, timeout=timeout)
     except subprocess.TimeoutExpired:
         return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False,

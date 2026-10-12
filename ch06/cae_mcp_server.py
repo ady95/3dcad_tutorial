@@ -55,13 +55,13 @@ def optimize(x0_base_t: float, x0_arm_t: float, x0_r_in: float, maxfev: int = 40
 
 @server.tool()
 def export_final(base_t: float, arm_t: float, r_in: float) -> dict:
-    """최종 설계의 FCStd·STEP·STL, 요소 3 mm 상세 해석, 응력 그림을 만든다."""
+    """최종 설계를 요소 3 mm로 상세 해석하고, 합격일 때만 FCStd·STEP·STL·응력 그림을 만든다. 불합격이면 파일 없이 거절(ok=false)."""
     return quiet(project.export_final, base_t, arm_t, r_in)
 
 
 @server.tool()
 def write_report(ai_summary: str) -> dict:
-    """검증 보고서(report.md)를 만든다. ai_summary는 4~6문장 요약이며, 도구 결과에 있는 숫자만 쓸 수 있다."""
+    """합격한 최종 산출물의 검증 보고서(report.md)를 만든다. ai_summary는 4~6문장 요약이며, 도구 결과에 있는 숫자만 쓸 수 있다."""
     return quiet(project.write_report, ai_summary)
 
 
