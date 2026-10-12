@@ -1,7 +1,7 @@
 # 02-3 스프레드시트로 설계 변수를 관리하는 L자 브래킷 (실행 위치 (2): freecadcmd)
 # 설계 변수는 Spreadsheet 한 곳에만 두고, 스케치 구속·Pad 길이·필렛 반경은 수식(Expression)으로 연결한다.
-# 사용: freecadcmd ch02/bracket_parametric.py
-#       환경변수 SET="base_t=6;arm_t=10"을 주면 값을 바꿔 다시 계산하고 검증한다.
+# 사용: python fcrun.py ch02/bracket_parametric.py
+#       python fcrun.py "SET=base_t=6;arm_t=10" ch02/bracket_parametric.py — 값을 바꿔 다시 계산하고 검증한다.
 #       REBIND=1을 함께 주면 필렛 모서리를 다시 찾아 연결한 결과도 출력한다 (02-4).
 import json
 import math

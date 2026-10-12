@@ -5,6 +5,7 @@
 계산·판정은 전부 여기(코드·FreeCAD·CalculiX)서 하고, AI는 도구를 고르고 결과를 해석한다.
 """
 import json
+import math
 import re
 import shutil
 import sys
@@ -39,6 +40,29 @@ SPEC_EXAMPLE = {
 }
 
 
+REQUIRED_NUMBERS = ["base.length_mm", "base.width_mm", "arm.height_from_base_bottom_mm", "holes.diameter_mm",
+                    "holes.x1_from_arm_inner_face_mm", "holes.x2_from_base_end_mm", "holes.y_from_long_edge_mm",
+                    "load.force_N", "criteria.safety_factor_min", "criteria.max_deflection_mm",
+                    "initial.base_t", "initial.arm_t", "initial.r_in"]
+_MISSING = object()
+
+
+class _Stop(Exception):
+    """검사를 더 진행할 수 없을 때 (이미 모은 오류로 거절)"""
+
+
+def _get(d, path):
+    for key in path.split("."):
+        if not isinstance(d, dict) or key not in d:
+            return _MISSING
+        d = d[key]
+    return d
+
+
+def _positive(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v > 0
+
+
 def fail(stage, detail, hint=""):
     return {"ok": False, "stage": stage, "detail": detail, "hint": hint}
 
@@ -70,10 +94,13 @@ class Project:
                 errors.append("하중은 세로판 윗면(arm_top), 바닥판 반대쪽(away_from_base)만 지원")
             if spec.get("fixture") not in ("bolt_holes", "base_bottom"):
                 errors.append("구속은 bolt_holes 또는 base_bottom만 지원")
-            nums = [spec["base"]["length_mm"], spec["base"]["width_mm"], spec["arm"]["height_from_base_bottom_mm"],
-                    *spec["holes"].values(), ld["force_N"], *spec["criteria"].values(), *spec["initial"].values()]
-            if any(not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0 for v in nums):
-                errors.append("치수·하중·기준·초기값은 모두 양수 숫자여야 함")
+            n_before = len(errors)
+            for path in REQUIRED_NUMBERS:                      # 빠진 값·잘못된 값은 추측하지 않고 거절
+                v = _get(spec, path)
+                if v is _MISSING:
+                    errors.append(f"필수 항목 없음: {path} — 사용자에게 물으세요")
+                elif not _positive(v):
+                    errors.append(f"{path}={v!r}: 유한한 양수여야 함")
             if "variable_ranges_mm" not in spec:
                 spec["variable_ranges_mm"] = CAPABILITIES["defaults_if_missing"]["variable_ranges_mm"]
                 applied.append("variable_ranges_mm 기본값")
@@ -83,17 +110,32 @@ class Project:
             if "outer_corner_fillet_mm" not in spec:
                 spec["outer_corner_fillet_mm"] = CAPABILITIES["defaults_if_missing"]["outer_corner_fillet_mm"]
                 applied.append("outer_corner_fillet_mm 기본값")
+            if not _positive(spec["outer_corner_fillet_mm"]):
+                errors.append(f"outer_corner_fillet_mm={spec['outer_corner_fillet_mm']!r}: 유한한 양수여야 함")
+            if len(errors) > n_before:                          # 숫자가 빠지거나 틀리면 아래의 관계 검사는 의미가 없다
+                raise _Stop
+            n_before = len(errors)
             rng, init, h = spec["variable_ranges_mm"], spec["initial"], spec["holes"]
             for k in ("base_t", "arm_t", "r_in"):
-                if not rng[k][0] <= init[k] <= rng[k][1]:
-                    errors.append(f"초기값 {k}={init[k]}이 범위 {rng[k]} 밖")
+                r = rng.get(k) if isinstance(rng, dict) else None
+                if not (isinstance(r, list) and len(r) == 2 and all(_positive(x) for x in r) and r[0] < r[1]):
+                    errors.append(f"variable_ranges_mm.{k}={r!r}: [최소, 최대] 두 양수, 최소 < 최대")
+                elif not r[0] <= init[k] <= r[1]:
+                    errors.append(f"초기값 {k}={init[k]}이 범위 {r} 밖")
+            stock = spec["stock_thickness_mm"]
+            if not (isinstance(stock, list) and stock and all(_positive(x) for x in stock)):
+                errors.append(f"stock_thickness_mm={stock!r}: 양수 목록이어야 함")
+            if len(errors) > n_before:
+                raise _Stop
             if rng["r_in"][1] > max(FILLET_R):
                 errors.append(f"r_in 상한은 {max(FILLET_R)} mm 이하 (표준 필렛 반경 목록)")
             if h["x1_from_arm_inner_face_mm"] - h["diameter_mm"] / 2 <= rng["r_in"][1]:
                 errors.append("세로판 쪽 구멍이 필렛 최대 반경과 겹침")
             if spec["base"]["length_mm"] - h["x2_from_base_end_mm"] <= h["x1_from_arm_inner_face_mm"]:
                 errors.append("끝단 쪽 구멍이 세로판 쪽 구멍보다 안쪽에 있음")
-        except (KeyError, TypeError, AttributeError) as e:
+        except _Stop:
+            pass
+        except (KeyError, TypeError, AttributeError, IndexError, ValueError) as e:
             errors.append(f"형식 오류: {e!r} — get_capabilities의 spec_example 형식을 따르세요")
         if errors:
             return fail("spec", errors, "지원 범위 밖이면 사용자에게 알리고, 값이 빠졌으면 사용자에게 물으세요")

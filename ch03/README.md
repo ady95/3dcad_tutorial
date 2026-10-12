@@ -27,7 +27,7 @@ python ch03/mcp_agent.py
 python ch03/design_agent.py --answers ch03/answers.json
 python ch03/modify_model.py --init
 python ch03/modify_model.py "세로판만 2mm 두껍게 해줘"
-freecadcmd ch03/export_formats.py
+python fcrun.py ch03/export_formats.py
 ```
 
 ## 기준 버전 (실측)

@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.stdout.reconfigure(errors="replace")   # 콘솔이 못 쓰는 문자(−, — 등)는 ?로 — 한국어 Windows(cp949)에서 멈추지 않게
 sys.path.insert(0, str(ROOT))
 from dotenv import load_dotenv  # noqa: E402
 

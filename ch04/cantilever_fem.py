@@ -1,6 +1,6 @@
 # 04-3 외팔보 해석 자동화와 이론해 비교 (실행 위치 (2): freecadcmd)
 # 200×20×10mm 알루미늄 보의 한쪽 끝을 고정하고 반대쪽 끝에 200N을 아래로 가한다.
-# 사용: freecadcmd ch04/cantilever_fem.py     (환경변수 MESH=요소 크기 mm, 기본 5)
+# 사용: python fcrun.py ch04/cantilever_fem.py     (요소 크기 바꾸기: python fcrun.py MESH=2.5 ch04/cantilever_fem.py, 기본 5)
 import json
 import os
 import sys

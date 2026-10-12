@@ -1,8 +1,8 @@
 # 07-2 화면 조작 과제 준비 (실행 위치 (2): freecadcmd)
 # 05장 최종 설계(6/8/R8) 브래킷과 해석 컨테이너(Analysis, 재료, CalculiX 솔버)까지 코드로 만들어 둔다.
 # 화면 조작에 맡기는 것은 "볼트 구멍 4개 내면에 Fixed 구속 지정" 한 가지뿐이다.
-# 사용: OUT_DIR=output/ch07 freecadcmd ch02/bracket_parametric.py   (기준 모델을 07장 폴더에 따로 만든다)
-#       freecadcmd ch07/prepare_task.py                             → output/ch07/T2_input.FCStd
+# 사용: python fcrun.py OUT_DIR=output/ch07 ch02/bracket_parametric.py   (기준 모델을 07장 폴더에 따로 만든다)
+#       python fcrun.py ch07/prepare_task.py                             → output/ch07/T2_input.FCStd
 import json
 import os
 import sys

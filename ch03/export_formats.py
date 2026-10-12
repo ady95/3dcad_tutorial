@@ -1,6 +1,6 @@
 # 03-4 FCStd·STEP·STL 내보내기와 재검증 (실행 위치 (2): freecadcmd)
 # 02-3의 파라메트릭 브래킷을 세 형식으로 내보내고, 다시 불러와 원본과 비교한다.
-# 사용: freecadcmd ch03/export_formats.py     (먼저 freecadcmd ch02/bracket_parametric.py 실행)
+# 사용: python fcrun.py ch03/export_formats.py     (먼저 python fcrun.py ch02/bracket_parametric.py 실행)
 import json
 import os
 

@@ -5,7 +5,7 @@ bracket_fem.py가 남긴 result.json·result.vtk와 convergence.py의 수렴 결
 요약에 나온 숫자가 보고서에 실제로 있는지 코드가 대조한다.
 
 사용 (저장소 루트에서):
-  freecadcmd ch04/bracket_fem.py   (환경변수 SET="base_t=6;arm_t=8;r_in=8" MESH=3 VTK=1 OUT_DIR=output/ch04/report_final)
+  python fcrun.py "SET=base_t=6;arm_t=8;r_in=8" MESH=3 VTK=1 OUT_DIR=output/ch04/report_final ch04/bracket_fem.py
   python ch04/report.py --run output/ch04/report_final [--summarize]
 """
 import argparse
@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.stdout.reconfigure(errors="replace")   # 콘솔이 못 쓰는 문자(−, — 등)는 ?로 — 한국어 Windows(cp949)에서 멈추지 않게
 sys.path.insert(0, str(ROOT))
 import pyvista as pv  # noqa: E402
 from matplotlib.colors import ListedColormap  # noqa: E402

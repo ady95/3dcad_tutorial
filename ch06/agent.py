@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.stdout.reconfigure(errors="replace")   # 콘솔이 못 쓰는 문자(−, — 등)는 ?로 — 한국어 Windows(cp949)에서 멈추지 않게
 sys.path.insert(0, str(ROOT))
 from dotenv import load_dotenv  # noqa: E402
 
@@ -55,7 +56,8 @@ async def run(request, answers, project, log):
     client, model = OpenAI(), os.environ.get("OPENAI_MODEL", "gpt-6-astra")
     server = StdioServerParameters(command=sys.executable, args=[str(ROOT / "ch06" / "cae_mcp_server.py")],
                                    env={**os.environ, "CAE_PROJECT_DIR": str(project), "PYTHONUTF8": "1"})
-    stats = {"llm_calls": 0, "tokens_in": 0, "tokens_out": 0, "tool_calls": {}, "tool_errors": 0, "questions": 0}
+    stats = {"model": model, "llm_calls": 0, "tokens_in": 0, "tokens_out": 0, "tool_calls": {}, "tool_errors": 0, "questions": 0}
+    log(f"모델: {model}")      # 어떤 모델로 돌았는지 기록에 남긴다 — OPENAI_MODEL 환경변수로 바뀔 수 있다
     t0 = time.time()
     async with stdio_client(server) as (r, w):
         async with ClientSession(r, w) as session:
@@ -110,6 +112,10 @@ def main():
     request = a.request or Path(a.request_file).read_text(encoding="utf-8").strip()
     answers = json.loads(Path(a.answers).read_text(encoding="utf-8")) if a.answers else None
     project = Path(a.project)
+    if project.exists() and any(project.iterdir()):     # 이전 실행의 state.json·보고서와 섞이지 않게 옮겨 두고 새로 시작
+        backup = project.with_name(f"{project.name}_{time.strftime('%Y%m%d-%H%M%S')}")
+        project.rename(backup)
+        print(f"이전 결과를 {backup.name}(으)로 옮기고 새로 시작합니다.", flush=True)
     project.mkdir(parents=True, exist_ok=True)
     lines = []
 

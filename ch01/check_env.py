@@ -3,6 +3,7 @@
 사용: python ch01/check_env.py   (저장소 루트에서, .env 설정 후)
 """
 import importlib
+import importlib.metadata
 import platform
 import subprocess
 import sys
@@ -28,10 +29,11 @@ check("Python", (3, 11) <= (v.major, v.minor) < (3, 14), platform.python_version
 
 # 2. 패키지
 for pkg, mod in [("openai", "openai"), ("python-dotenv", "dotenv"), ("numpy", "numpy"), ("scipy", "scipy"),
-                 ("matplotlib", "matplotlib"), ("pyvista", "pyvista"), ("gmsh", "gmsh"), ("build123d", "build123d")]:
+                 ("matplotlib", "matplotlib"), ("pyvista", "pyvista"), ("gmsh", "gmsh"), ("build123d", "build123d"),
+                 ("mcp", "mcp")]:                                   # mcp는 03-1·06장에서 쓴다
     try:
         m = importlib.import_module(mod)
-        check(pkg, True, getattr(m, "__version__", "설치됨"))
+        check(pkg, True, getattr(m, "__version__", None) or importlib.metadata.version(pkg))
     except Exception as e:  # 설치 안 됨, DLL 오류 등
         check(pkg, False, type(e).__name__)
 

@@ -12,11 +12,11 @@
 ## 실행 (저장소 루트에서)
 
 ```bash
-freecadcmd ch02/bracket_parametric.py          # 해석할 브래킷 준비
-freecadcmd ch04/cantilever_fem.py
-freecadcmd ch04/bracket_fem.py                 # FIX=bottom, SET="base_t=6;arm_t=8;r_in=8"
+python fcrun.py ch02/bracket_parametric.py     # 해석할 브래킷 준비
+python fcrun.py ch04/cantilever_fem.py
+python fcrun.py ch04/bracket_fem.py            # python fcrun.py FIX=bottom ch04/bracket_fem.py
 python ch04/convergence.py
-SET="base_t=6;arm_t=8;r_in=8" MESH=3 VTK=1 OUT_DIR=output/ch04/report_final freecadcmd ch04/bracket_fem.py
+python fcrun.py "SET=base_t=6;arm_t=8;r_in=8" MESH=3 VTK=1 OUT_DIR=output/ch04/report_final ch04/bracket_fem.py
 python ch04/report.py --summarize
 ```
 

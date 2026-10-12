@@ -1,6 +1,6 @@
 # 02-2 PartDesign으로 L자 브래킷 만들기 (실행 위치 (2): freecadcmd)
 # Body → L자 단면 스케치(XZ 평면) → Pad(폭 방향) → 구멍 스케치 → Pocket → Fillet
-# 사용: freecadcmd ch02/bracket_partdesign.py      (결과: output/ch02/bracket_pd.FCStd)
+# 사용: python fcrun.py ch02/bracket_partdesign.py      (결과: output/ch02/bracket_pd.FCStd)
 import os
 
 import FreeCAD as App

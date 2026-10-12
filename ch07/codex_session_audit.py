@@ -56,5 +56,6 @@ def audit(path):
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(errors="replace")   # 콘솔이 못 쓰는 문자는 ?로 (cp949 콘솔)
     for f in sys.argv[1:]:
         print(json.dumps(audit(f), ensure_ascii=False, indent=1))

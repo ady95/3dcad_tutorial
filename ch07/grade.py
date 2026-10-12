@@ -1,8 +1,8 @@
 # 07-2 화면 조작 결과 채점 (실행 위치 (2): freecadcmd)
 # 화면 조작 에이전트의 "완료했습니다"를 믿지 않고, 저장된 파일을 열어 코드로 판정한다.
-# 사용: MODE=T2 FILE=결과.FCStd freecadcmd ch07/grade.py   — 볼트 구멍 4면 Fixed 구속
-#       MODE=T1 FILE=결과.FCStd freecadcmd ch07/grade.py   — 01-3 플레이트 (07-3)
-#       MODE=selftest freecadcmd ch07/grade.py              — 채점기부터 검증: 정답은 합격, 오답은 불합격이어야 한다
+# 사용: python fcrun.py MODE=T2 FILE=결과.FCStd ch07/grade.py   — 볼트 구멍 4면 Fixed 구속
+#       python fcrun.py MODE=T1 FILE=결과.FCStd ch07/grade.py   — 01-3 플레이트 (07-3)
+#       python fcrun.py MODE=selftest ch07/grade.py              — 채점기부터 검증: 정답은 합격, 오답은 불합격이어야 한다
 import json
 import math
 import os

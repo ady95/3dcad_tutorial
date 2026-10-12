@@ -1,6 +1,6 @@
 # 02-1 FreeCAD Python API 기초 (실행 위치 (2): freecadcmd)
 # 문서(Document) → 객체(DocumentObject) → 형상(Shape) 구조와 B-Rep 조회를 01-3의 플레이트로 확인한다.
-# 사용: freecadcmd ch02/api_basics.py      (먼저 01-3의 make_plate.py를 실행해 FCStd를 만들어 둘 것)
+# 사용: python fcrun.py ch02/api_basics.py      (먼저 01-3의 make_plate.py를 실행해 FCStd를 만들어 둘 것)
 import collections
 import os
 

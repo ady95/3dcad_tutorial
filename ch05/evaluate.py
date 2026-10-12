@@ -10,6 +10,7 @@ evaluate({"base_t": 6, "arm_t": 8, "r_in": 8})처럼 부르면 freecadcmd로 04-
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -35,9 +36,10 @@ def ensure_template():
         run_freecad(ROOT / "ch02" / "bracket_parametric.py", env={"OUT_DIR": str(TEMPLATE_DIR)})
 
 
-def evaluate(x, mesh=4.0, tag="", load=None):
+def evaluate(x, mesh=4.0, tag="", load=None, timeout=900):
     """설계 변수 dict → 결과 dict. 실패해도 예외 대신 ok=False로 돌려준다 (최적화가 멈추지 않게).
-    load: 해석 조건을 바꿀 때만 준다 (06장). 예: {"LOAD_N": "300", "FIX": "bottom"}"""
+    load: 해석 조건을 바꿀 때만 준다 (06장). 예: {"LOAD_N": "300", "FIX": "bottom"}
+    timeout: 해석 1회의 최대 시간(초). 넘으면 stage timeout으로 돌려주고 캐시하지 않는다(다음에 다시 시도)."""
     x = {k: round(float(v), 2) for k, v in sorted(x.items())}       # 0.01 mm 단위로 맞춰 캐시
     key = hashlib.md5(json.dumps([x, mesh] + ([load] if load else [])).encode()).hexdigest()[:10]
     run_dir = CACHE / key
@@ -46,10 +48,18 @@ def evaluate(x, mesh=4.0, tag="", load=None):
         return {**json.loads(cached.read_text(encoding="utf-8")), "cached": True}
     run_dir.mkdir(parents=True, exist_ok=True)
     ensure_template()
+    # 해석 조건을 모두 직접 지정한다 — 셸에 남은 FIX·LOAD_N 같은 환경변수가 섞이지 않게
     env = {"SRC": str(SRC), "SET": ";".join(f"{k}={v}" for k, v in x.items()), "MESH": str(mesh), "OUT_DIR": str(run_dir),
-           **(load or {})}
+           "FIX": "holes", "LOAD_N": "200", "VTK": "0", **(load or {})}
     t = time.time()
-    rc, log = run_freecad(BRACKET_FEM, env=env, timeout=900)
+    try:
+        rc, log = run_freecad(BRACKET_FEM, env=env, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False,
+                        "error": {"stage": "timeout", "detail": f"{timeout}초 안에 끝나지 않음"}}, t, tag, None)
+    except OSError as e:                    # freecadcmd를 찾지 못하거나 실행할 수 없음
+        return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False,
+                        "error": {"stage": "run", "detail": str(e)}}, t, tag, None)
     line = tagged_line(log, "RESULT")
     if line:
         r = json.loads(line)
@@ -59,8 +69,14 @@ def evaluate(x, mesh=4.0, tag="", load=None):
         fail = tagged_line(log, "FAIL")
         res = {"x": x, "mesh_mm": mesh, "ok": False, "pass": False,
                "error": json.loads(fail) if fail else {"stage": "unknown", "detail": log[-200:]}}
+    return _record(res, t, tag, cached)
+
+
+def _record(res, t, tag, cached):
+    """결과를 이력에 남기고, cached 경로가 있으면 캐시한다 (시간 초과·실행 오류는 캐시하지 않음)"""
     res["sec"] = round(time.time() - t, 1)
-    cached.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
+    if cached:
+        cached.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"tag": tag, **res}, ensure_ascii=False) + "\n")
     return res

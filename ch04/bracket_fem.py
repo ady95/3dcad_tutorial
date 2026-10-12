@@ -2,6 +2,7 @@
 # 02-3의 파라메트릭 브래킷 FCStd를 열어(필요하면 설계 변수를 바꾸고) 해석하고, 안전율·처짐 기준으로 판정한다.
 # 환경변수: SRC(기본 output/ch02/bracket_param.FCStd), SET="base_t=6;arm_t=8", MESH(기본 4), FIX=holes|bottom,
 #           LOAD_N(기본 200), VTK=1 이면 응력 결과를 .vtk로도 저장 (04-5 시각화용)
+# 사용: python fcrun.py ch04/bracket_fem.py   /   python fcrun.py FIX=bottom ch04/bracket_fem.py   (환경변수는 이 실행에만)
 import json
 import os
 import sys

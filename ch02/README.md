@@ -12,9 +12,9 @@
 ## 실행 (저장소 루트에서)
 
 ```bash
-freecadcmd ch02/api_basics.py                 # 먼저 python ch01/make_plate.py
-freecadcmd ch02/bracket_partdesign.py
-freecadcmd ch02/bracket_parametric.py         # 환경변수 SET="base_t=6" REBIND=1 로 값 변경
+python fcrun.py ch02/api_basics.py            # 먼저 python ch01/make_plate.py
+python fcrun.py ch02/bracket_partdesign.py
+python fcrun.py ch02/bracket_parametric.py    # 값 변경: python fcrun.py SET=base_t=6 REBIND=1 ch02/bracket_parametric.py
 python ch02/regression_test.py
 python ch02/generate_bracket.py               # --verbal: 좌표 없이 말로만 적은 요구사항
 ```

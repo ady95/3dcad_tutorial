@@ -13,9 +13,9 @@
 ## 실행 (저장소 루트에서)
 
 ```bash
-OUT_DIR=output/ch07 freecadcmd ch02/bracket_parametric.py
-freecadcmd ch07/prepare_task.py
-MODE=selftest freecadcmd ch07/grade.py
+python fcrun.py OUT_DIR=output/ch07 ch02/bracket_parametric.py
+python fcrun.py ch07/prepare_task.py
+python fcrun.py MODE=selftest ch07/grade.py
 python ch07/hybrid_loop.py --task T2      # 프롬프트를 Codex 앱 새 스레드에 붙여 넣고, 끝나면 Enter
 python ch07/codex_session_audit.py <rollout-*.jsonl>
 ```
