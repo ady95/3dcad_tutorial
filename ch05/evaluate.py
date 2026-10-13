@@ -52,18 +52,18 @@ def evaluate(x, mesh=4.0, tag="", load=None, timeout=900):
     env = {"SRC": str(SRC), "SET": ";".join(f"{k}={v}" for k, v in x.items()), "MESH": str(mesh), "OUT_DIR": str(run_dir),
            "FIX": "holes", "LOAD_N": "200", "VTK": "0", **(load or {})}
     t = time.time()
+    err = None
     try:                                    # 기준 모델 생성(처음 한 번)과 해석 모두 같은 실패 경로로
-        if not ensure_template(timeout):
-            return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False,
-                            "error": {"stage": "template", "detail": "기준 모델을 만들지 못함 (ch02/bracket_parametric.py)"}},
-                           t, tag, None)
-        rc, log = run_freecad(BRACKET_FEM, env=env, timeout=timeout)
+        if ensure_template(timeout):
+            rc, log = run_freecad(BRACKET_FEM, env=env, timeout=timeout)
+        else:
+            err = {"stage": "template", "detail": "기준 모델을 만들지 못함 (ch02/bracket_parametric.py)"}
     except subprocess.TimeoutExpired:
-        return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False,
-                        "error": {"stage": "timeout", "detail": f"{timeout}초 안에 끝나지 않음"}}, t, tag, None)
+        err = {"stage": "timeout", "detail": f"{timeout}초 안에 끝나지 않음"}
     except OSError as e:                    # freecadcmd를 찾지 못하거나 실행할 수 없음
-        return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False,
-                        "error": {"stage": "run", "detail": str(e)}}, t, tag, None)
+        err = {"stage": "run", "detail": str(e)}
+    if err:                                 # 실패는 캐시하지 않는다 (다음에 다시 시도)
+        return _record({"x": x, "mesh_mm": mesh, "ok": False, "pass": False, "error": err}, t, tag, None)
     line = tagged_line(log, "RESULT")
     if line:
         r = json.loads(line)
@@ -81,6 +81,7 @@ def _record(res, t, tag, cached):
     res["sec"] = round(time.time() - t, 1)
     if cached:
         cached.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
+    HISTORY.parent.mkdir(parents=True, exist_ok=True)     # import해서 부르면 __main__의 OUT.mkdir를 거치지 않는다
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"tag": tag, **res}, ensure_ascii=False) + "\n")
     return res

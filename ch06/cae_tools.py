@@ -243,10 +243,18 @@ class Project:
         shutil.copy(work / "bracket_default.stl", self.dir / "bracket.stl")
         shutil.copytree(work / "fem", self.dir / "fem", dirs_exist_ok=True)
         shutil.rmtree(work, ignore_errors=True)          # 산출물 폴더에는 최종 파일만 남긴다
+        fem_json = self.dir / "fem" / "result.json"      # 해석 JSON의 VTK 경로도 옮긴 위치로 (지운 작업 폴더를 가리키지 않게)
+        res = json.loads(fem_json.read_text(encoding="utf-8"))
+        res["vtk"] = str((self.dir / "fem" / "result.vtk").resolve())
+        fem_json.write_text(json.dumps(res, indent=1), encoding="utf-8")
         import pyvista as pv                             # PyVista는 그림이 필요할 때만 불러온다
         from ch04.report import render_contour
         render_contour(str(self.dir / "fem" / "result.vtk"), str(self.dir / "contour.png"))
         pv.close_all()      # MCP 서버는 도구를 작업 스레드에서 실행한다 — 창을 같은 스레드에서 닫아야 종료 때 OpenGL 오류가 없다
+        missing = [f for f in [*(self.dir / n for n in ("bracket.FCStd", "bracket.step", "bracket.stl", "contour.png")),
+                               fem_json, Path(res["vtk"])] if not f.exists()]
+        if missing:                                      # 보고서에 적을 파일이 실제로 있는지 확인하고 끝낸다
+            return fail("export", [str(f.relative_to(self.dir)) for f in missing], "디스크 공간·권한 확인 후 다시 export_final")
         out = {"ok": True, "design": x, "files": ["bracket.FCStd", "bracket.step", "bracket.stl", "fem/result.json",
                                                   "fem/result.vtk", "contour.png"],
                "step_volume_diff": exp.get("step", {}).get("volume_diff"), "mesh3": mesh3}
